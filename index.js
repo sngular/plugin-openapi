@@ -23,7 +23,13 @@ const defaultOptions = {
 
 JSONSchemaFaker.format('binary', () => 'file.txt')
 
-async function generateWorkflow (file, options) {
+async function generateWorkflow (file, options, examplesFile) {
+  // FIXME: temp
+    examplesFile = 'testComplete.examples.yml'
+    // END FIXME:
+
+
+
   options = merge(defaultOptions, options)
 
   JSONSchemaFaker.option({
@@ -161,38 +167,104 @@ async function generateWorkflow (file, options) {
       }
 
       if (swagger.paths[path][method].responses) {
-        const response = Object.values(swagger.paths[path][method].responses)[0]
-        const responseContent =  response.content?.[options.contentType]
+        // NOTE: loop through responses
+        if (examplesFile) {
+          const examplesSwagger = await SwaggerParser.dereference(examplesFile)
+          for (const [code, response] of Object.entries(swagger.paths[path][method].responses)) {
+            try {
+              const stepCopy = JSON.parse(JSON.stringify(step))
+              stepCopy.name = `${stepCopy.name} - ${code}`
 
-        if (response) {
-          if (Object.keys(options.check).length !== 0) step.http.check = {}
-          if (options.check.status) {
-            step.http.check.status = Object.keys(swagger.paths[path][method].responses)[0] === 'default' ? 200 : Number()
+                // Use parameters and requestBody examples in the request
+
+                if (examplesSwagger.paths[path][method].parameters?.length) {
+                   examplesSwagger.paths[path][method].parameters.forEach(param => {
+                     if (param.in === 'header') {
+                        if (!stepCopy.http.headers) {
+                          stepCopy.http.headers = {}
+                        }
+                        stepCopy.http.headers[param.name] = param.examples[code].value
+                     }
+                     // TODO: param.in === 'query'
+                     // TODO: param.in === 'cookie' ?
+                     // TODO: param.in === 'path'   ?
+                   })
+
+                   // TODO: requestBody
+                }
+
+
+
+    
+
+                // add check
+                if (Object.keys(options.check).length !== 0) {
+                  stepCopy.http.check = {}
+                }
+                if (options.check.status) {
+                  stepCopy.http.check.status = Number(code)
+                }
+
+                const responseContent =  response.content?.[options.contentType]
+                if (responseContent && options.check.schema) {
+                  stepCopy.http.check.schema = responseContent.schema
+                }
+
+                // Save step
+                if (swagger.tags && swagger.paths[path][method].tags) {
+                  swagger.paths[path][method].tags.forEach(tag => workflow.tests[tag].steps.push(stepCopy))
+                } else {
+                  if (!workflow.tests.default) {
+                    workflow.tests.default = {
+                      name: 'Default',
+                      steps: []
+                    }
+                  }
+          
+                  workflow.tests.default.steps.push(stepCopy)
+                }
+            } catch (e) {
+              // FIXME: console?
+              console.log('[ERROR] processing response', path, method, code, e)
+            }
           }
-        }
 
-        if (responseContent) {
-          if (options.check.schema) {
-            step.http.check.schema = responseContent.schema
+        } else {
+          const response = Object.values(swagger.paths[path][method].responses)[0]
+          const responseContent =  response.content?.[options.contentType]
+
+          if (response) {
+            if (Object.keys(options.check).length !== 0) step.http.check = {}
+            if (options.check.status) {
+              step.http.check.status = Object.keys(swagger.paths[path][method].responses)[0] === 'default' ? 200 : Number()
+            }
           }
 
-          if (options.check.examples) {
-            step.http.check.json = responseContent.example || (responseContent.examples ? Object.values(responseContent.examples)[0].value : undefined)
+          if (responseContent) {
+            if (options.check.schema) {
+              step.http.check.schema = responseContent.schema
+            }
+
+            if (options.check.examples) {
+              step.http.check.json = responseContent.example || (responseContent.examples ? Object.values(responseContent.examples)[0].value : undefined)
+            }
           }
         }
       }
 
-      if (swagger.tags && swagger.paths[path][method].tags) {
-        swagger.paths[path][method].tags.forEach(tag => workflow.tests[tag].steps.push(step))
-      } else {
-        if (!workflow.tests.default) {
-          workflow.tests.default = {
-            name: 'Default',
-            steps: []
+      if (!examplesFile) {
+        if (swagger.tags && swagger.paths[path][method].tags) {
+          swagger.paths[path][method].tags.forEach(tag => workflow.tests[tag].steps.push(step))
+        } else {
+          if (!workflow.tests.default) {
+            workflow.tests.default = {
+              name: 'Default',
+              steps: []
+            }
           }
-        }
 
-        workflow.tests.default.steps.push(step)
+          workflow.tests.default.steps.push(step)
+        }
       }
     }
   }
@@ -205,6 +277,8 @@ async function generateWorkflowFile (file, output, options) {
     quotingType: '"'
   }))
 }
+
+
 
 module.exports = {
   generateWorkflow,

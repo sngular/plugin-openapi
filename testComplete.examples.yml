@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: Hello World API
+  version: 1.0.0
+  description: A simple API that returns a greeting message
+servers:
+  - url: http://localhost:1234
+paths:
+  /hello-get:
+    get:
+      summary: Returns a greeting message
+      parameters:
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+          examples:
+            '200':
+              summary: Expects a 200 status code from the API
+              value: 'statusCode=200'
+            '400':
+              summary: Expects a 400 status code from the API
+              value: 'statusCode=400'
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: Bad Request
+  /hello-post:
+    post:
+      summary: Test endpoint
+      parameters:
+        - name: Prefer
+          in: header
+          schema:
+            type: string
+          examples:
+            '200':
+              summary: Expects a 200 status code from the API
+              value: 'statusCode=200'
+            '500':
+              summary: Expects a 500 status code from the API
+              value: 'statusCode=500'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas: {}

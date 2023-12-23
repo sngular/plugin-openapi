@@ -1,0 +1,9 @@
+{
+	"schemasOrigin": "/Users/javier.sierra/Repositories/plugin-openapi/tests",
+	"selectedSchemas": [
+		{
+			"path": "/Users/javier.sierra/Repositories/plugin-openapi/tests/testComplete.yml",
+			"port": 1234
+		}
+	]
+}

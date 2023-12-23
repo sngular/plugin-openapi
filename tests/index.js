@@ -1,6 +1,6 @@
-const { generateWorkflowFile } = require('../index.js')
-generateWorkflowFile('./tests/petstore.yaml', 'workflow.yml', {
+const { generateWorkflowFile } = require('../index.js');
+generateWorkflowFile('./tests/testComplete.yml', 'workflow.yml', {
   generator: {
-    pathParams: false
-  }
-})
+    pathParams: false,
+  },
+});

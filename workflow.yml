@@ -1,0 +1,79 @@
+version: "1.0"
+name: Hello World API
+config:
+  http:
+    baseURL: http://localhost:1234
+tests:
+  default:
+    name: Default
+    steps:
+      - name: Returns a greeting message - 200
+        http:
+          url: /hello-get
+          method: GET
+          headers:
+            Prefer: statusCode=200
+          check:
+            status: 200
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+      - name: Returns a greeting message - 400
+        http:
+          url: /hello-get
+          method: GET
+          headers:
+            Prefer: statusCode=400
+          check:
+            status: 400
+            schema:
+              type: object
+              required:
+                - error
+              properties:
+                error:
+                  type: string
+      - name: Test endpoint - 200
+        http:
+          url: /hello-post
+          method: POST
+          headers:
+            Content-Type: application/json
+            accept: application/json
+            Prefer: statusCode=200
+          json:
+            message: dolore et cillum sit
+          check:
+            status: 200
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+      - name: Test endpoint - 500
+        http:
+          url: /hello-post
+          method: POST
+          headers:
+            Content-Type: application/json
+            accept: application/json
+            Prefer: statusCode=500
+          json:
+            message: dolore et cillum sit
+          check:
+            status: 500
+            schema:
+              type: object
+              required:
+                - error
+              properties:
+                error:
+                  type: string
+components:
+  schemas: {}
