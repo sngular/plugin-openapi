@@ -11,7 +11,8 @@ export declare type GenerateWorkflowOptions = {
     examples: boolean,
     schema: boolean
   },
-  contentType: string
+  contentType: string,
+  requestExamples: string
 }
 
 export declare function generateWorkflow(file: any, options: GenerateWorkflowOptions): Promise<object>
