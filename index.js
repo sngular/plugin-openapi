@@ -3,7 +3,7 @@ const SwaggerParser = require("@apidevtools/swagger-parser");
 const { dump } = require("js-yaml");
 const fs = require("fs");
 const merge = require("deepmerge");
-//My fork
+
 const defaultOptions = {
   generator: {
     pathParams: true,
@@ -188,50 +188,65 @@ async function generateWorkflow(file, options) {
       }
 
       if (swagger.paths[path][method].responses) {
-        const response = Object.values(
-          swagger.paths[path][method].responses
-        )[0];
-        const responseContent = response.content?.[options.contentType];
+        const responses = swagger.paths[path][method].responses;
+        for (let response in responses) {
+          const responseContent = responses[response].content?.[options.contentType];
 
-        if (response) {
-          if (Object.keys(options.check).length !== 0) step.http.check = {};
-          if (options.check.status) {
-            step.http.check.status =
-              Object.keys(swagger.paths[path][method].responses)[0] ===
-              "default"
-                ? 200
-                : Number();
+          if (response) {
+            if (Object.keys(options.check).length !== 0) step.http.check = {};
+            if (options.check.status) {
+              step.http.check.status =
+                Object.keys(responses[response]) ===
+                  "default"
+                  ? 200
+                  : Number(response);
+            }
+          }
+
+          if (responseContent) {
+            if (options.check.schema) {
+              step.http.check.schema = responseContent.schema;
+            }
+
+            if (options.check.examples) {
+              step.http.check.json =
+                responseContent.example ||
+                (responseContent.examples
+                  ? Object.values(responseContent.examples)[0].value
+                  : undefined);
+            }
+          }
+          if (swagger.tags && swagger.paths[path][method].tags) {
+            swagger.paths[path][method].tags.forEach((tag) =>
+              workflow.tests[tag].steps.push(step)
+            );
+          } else {
+            if (!workflow.tests.default) {
+              workflow.tests.default = {
+                name: "Default",
+                steps: [],
+              };
+            }
+
+            // workflow.tests.default.steps.push(Object.assign({}, step));
+            workflow.tests.default.steps.push(JSON.parse(JSON.stringify(step)));
           }
         }
-
-        if (responseContent) {
-          if (options.check.schema) {
-            step.http.check.schema = responseContent.schema;
-          }
-
-          if (options.check.examples) {
-            step.http.check.json =
-              responseContent.example ||
-              (responseContent.examples
-                ? Object.values(responseContent.examples)[0].value
-                : undefined);
-          }
-        }
-      }
-
-      if (swagger.tags && swagger.paths[path][method].tags) {
-        swagger.paths[path][method].tags.forEach((tag) =>
-          workflow.tests[tag].steps.push(step)
-        );
       } else {
-        if (!workflow.tests.default) {
-          workflow.tests.default = {
-            name: "Default",
-            steps: [],
-          };
-        }
+        if (swagger.tags && swagger.paths[path][method].tags) {
+          swagger.paths[path][method].tags.forEach((tag) =>
+            workflow.tests[tag].steps.push(step)
+          );
+        } else {
+          if (!workflow.tests.default) {
+            workflow.tests.default = {
+              name: "Default",
+              steps: [],
+            };
+          }
 
-        workflow.tests.default.steps.push(step);
+          workflow.tests.default.steps.push(step);
+        }
       }
     }
   }
