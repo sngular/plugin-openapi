@@ -23,7 +23,20 @@ const defaultOptions = {
 
 JSONSchemaFaker.format('binary', () => 'file.txt')
 
+async function isOasValid(file) {
+  try {
+    await SwaggerParser.validate(file)
+    return true
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 async function generateWorkflow (file, options) {
+  if (options.requetExample.length === 0) {
+    areExamplesValid = await isOasValid(file)
+    console.log("Examples valid:",areExamplesValid)
+  }
   options = merge(defaultOptions, options)
 
   JSONSchemaFaker.option({
